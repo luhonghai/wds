@@ -11,6 +11,7 @@
 		user.setEmail("admin@wds.com");
 		user.setPassword("admin");
 		user.setId(-1L);
+		service.save(user);
 	}
 	WareHouseService wareHouseService = new WareHouseService();
 	List<WareHouse> wareHouses = wareHouseService.findAll();
