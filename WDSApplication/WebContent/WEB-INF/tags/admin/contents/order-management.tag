@@ -54,7 +54,9 @@
 				if (data.length == 0) return data;
 				var i;
 				for (i = 0; i < data.length; i++) {
-					data[i].fullName = data[i].customer.firstName + ' ' + data[i].customer.lastName;
+					if (typeof data[i].customer != 'undefined' && data[i].customer != null) {
+						data[i].fullName = data[i].customer.firstName + ' ' + data[i].customer.lastName;
+					}
 					data[i].strCreatedDate = (typeof data[i].createdDate == 'undefined' || data[i].createdDate <= 0) 
 							? "" 
 							: new Date(data[i].createdDate).customFormat("#DD#/#MM#/#YYYY#");

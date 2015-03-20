@@ -47,6 +47,7 @@ public class OrderService extends BaseService<Order, OrderDAO, OrderDaoImpl> {
 	
 	private void calculateItem(Order order) {
 		ProductWareHouseService productWareHouseService = new ProductWareHouseService();
+		ProductTransferService productTransferService = new ProductTransferService();
 		List<OrderItem> orderItems = order.getOrderItems();
 		for (OrderItem orderItem : orderItems) {
 			ProductWareHouse pwhCurrent = productWareHouseService.findProductWareHouse(order.getWareHouseId(), orderItem.getProductId());
@@ -75,6 +76,7 @@ public class OrderService extends BaseService<Order, OrderDAO, OrderDaoImpl> {
 							}
 							// Create transfer tracking item
 							ProductTransfer productTransfer = new ProductTransfer();
+							productTransfer.setId(-1L);
 							productTransfer.setFromWareHouseId(pwh.getWareHouseId());
 							productTransfer.setToWareHouseId(order.getWareHouseId());
 							productTransfer.setProductId(orderItem.getProductId());
@@ -85,7 +87,7 @@ public class OrderService extends BaseService<Order, OrderDAO, OrderDaoImpl> {
 										(int) LocationDistance.calculate(
 												LocationDistance.getLocationId(pwh.getWareHouse().getLocation()), 
 												LocationDistance.getLocationId(order.getWareHouse().getLocation())));
-
+							productTransferService.save(productTransfer);
 							//productWareHouseService.transfer(orderItem.getProductId(), pwh.getWareHouseId(), order.getWareHouseId(), amount);
 						}
 					}
