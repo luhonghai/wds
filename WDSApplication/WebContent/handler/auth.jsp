@@ -47,7 +47,7 @@
 					user.setDob(sdf.parse(dob));
 				}
 				userService.save(user);
-				session.setAttribute("user", user);
+				session.setAttribute("user", userService.login(user.getEmail(), p1, user.getRole()));
 				if (order == null) {
 					response.sendRedirect(request.getContextPath() + "/");
 				} else {
