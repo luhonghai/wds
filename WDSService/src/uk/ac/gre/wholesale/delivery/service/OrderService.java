@@ -3,7 +3,6 @@ package uk.ac.gre.wholesale.delivery.service;
 import java.util.Date;
 import java.util.List;
 
-import javax.mail.search.OrTerm;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
