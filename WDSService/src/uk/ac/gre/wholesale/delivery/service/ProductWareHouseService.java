@@ -10,7 +10,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
 import uk.ac.gre.wholesale.delivery.EJBConnector;
-import uk.ac.gre.wholesale.delivery.dao.LocationDistance;
 import uk.ac.gre.wholesale.delivery.dao.ProductDAO;
 import uk.ac.gre.wholesale.delivery.dao.ProductWareHouseDAO;
 import uk.ac.gre.wholesale.delivery.dao.WareHouseDAO;
@@ -167,5 +166,9 @@ public class ProductWareHouseService extends BaseService<ProductWareHouse, Produ
 			}
 		}
 		return updateData(objects);
+	}
+	
+	public ProductWareHouse findProductWareHouse(long warehouseId, long productId) {
+		return updateData(((ProductWareHouseDAO) getBean()).findProductWareHouse(productId, warehouseId));
 	}
 }

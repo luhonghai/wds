@@ -3,6 +3,7 @@ package uk.ac.gre.wholesale.delivery.service;
 import java.util.Date;
 import java.util.List;
 
+import javax.mail.search.OrTerm;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -10,6 +11,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
 import uk.ac.gre.wholesale.delivery.EJBConnector;
+import uk.ac.gre.wholesale.delivery.dao.LocationDistance;
 import uk.ac.gre.wholesale.delivery.dao.OrderDAO;
 import uk.ac.gre.wholesale.delivery.dao.UserDAO;
 import uk.ac.gre.wholesale.delivery.dao.WareHouseDAO;
@@ -18,6 +20,8 @@ import uk.ac.gre.wholesale.delivery.dao.impl.UserDaoImpl;
 import uk.ac.gre.wholesale.delivery.dao.impl.WareHouseDaoImpl;
 import uk.ac.gre.wholesale.delivery.entities.Order;
 import uk.ac.gre.wholesale.delivery.entities.OrderItem;
+import uk.ac.gre.wholesale.delivery.entities.ProductTransfer;
+import uk.ac.gre.wholesale.delivery.entities.ProductWareHouse;
 
 @Path("order")
 public class OrderService extends BaseService<Order, OrderDAO, OrderDaoImpl> {
@@ -43,11 +47,67 @@ public class OrderService extends BaseService<Order, OrderDAO, OrderDaoImpl> {
 	}
 	
 	private void calculateItem(Order order) {
-		
+		ProductWareHouseService productWareHouseService = new ProductWareHouseService();
+		List<OrderItem> orderItems = order.getOrderItems();
+		for (OrderItem orderItem : orderItems) {
+			ProductWareHouse pwhCurrent = productWareHouseService.findProductWareHouse(order.getWareHouseId(), orderItem.getProductId());
+			int numberOfNeededItem = orderItem.getQuantity();
+			if (pwhCurrent != null) {
+				numberOfNeededItem -= pwhCurrent.getStockLevel();
+			}
+			if (numberOfNeededItem > 0) {
+				// Not enough stock level in selected warehouse
+				// Try to search other warehouse
+				List<ProductWareHouse> productWareHouses = productWareHouseService.findAllByProduct(orderItem.getProductId());
+				for (ProductWareHouse pwh : productWareHouses) {
+					if (numberOfNeededItem <= 0) break;
+					// Not current warehouse
+					if (pwh.getWareHouseId() != order.getWareHouseId()) {
+						int sl = pwh.getStockLevel();
+						// Only get from warehouse have product
+						if (sl > 0) {
+							int amount;
+							if (numberOfNeededItem > sl) {
+								amount = sl;
+								numberOfNeededItem -= sl;
+							} else {
+								amount  = numberOfNeededItem;
+								numberOfNeededItem = 0;
+							}
+							// Create transfer tracking item
+							ProductTransfer productTransfer = new ProductTransfer();
+							productTransfer.setFromWareHouseId(pwh.getWareHouseId());
+							productTransfer.setToWareHouseId(order.getWareHouseId());
+							productTransfer.setProductId(orderItem.getProductId());
+							productTransfer.setStatus(ProductTransfer.STATUS_PENDING);
+							productTransfer.setQuantity(amount);
+							productTransfer
+								.setTotalMiles(
+										(int) LocationDistance.calculate(
+												LocationDistance.getLocationId(pwh.getWareHouse().getLocation()), 
+												LocationDistance.getLocationId(order.getWareHouse().getLocation())));
+
+							//productWareHouseService.transfer(orderItem.getProductId(), pwh.getWareHouseId(), order.getWareHouseId(), amount);
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	private void doPackingOrderItem(Order order) {
-		
+		ProductWareHouseService productWareHouseService = new ProductWareHouseService();
+		List<OrderItem> orderItems = order.getOrderItems();
+		for (OrderItem orderItem : orderItems) {
+			ProductWareHouse pwhCurrent = productWareHouseService.findProductWareHouse(order.getWareHouseId(), orderItem.getProductId());
+			if (pwhCurrent != null) {
+				int stockLevel = pwhCurrent.getStockLevel();
+				int quantity = orderItem.getQuantity();
+				if (quantity > stockLevel) quantity = stockLevel;
+				pwhCurrent.setStockLevel(stockLevel - quantity);
+				productWareHouseService.save(pwhCurrent);
+			}
+		}
 	}
 
 	@GET
